@@ -1,0 +1,17 @@
+{
+  "name": "@embedded-agent-kit/profile-embedded-firmware",
+  "private": true,
+  "description": "dsh profile composition for Embedded Agent Kit",
+  "dependencies": {
+    "@amethystluna/embedded-workbench": "0.7.1",
+    "@embedded-agent-kit/bundle": "file:../../bundles/kit-bundle"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@amethystluna/embedded-workbench",
+        "@embedded-agent-kit/bundle"
+      ]
+    }
+  }
+}

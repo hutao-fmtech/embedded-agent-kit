@@ -1,0 +1,38 @@
+{
+  "name": "@embedded-agent-kit/bundle",
+  "version": "0.1.0",
+  "description": "Embedded Agent Kit org/kit skills bundle for DeepSeek Harness (dsh) — standards, STM32 bring-up, clock/boot red lines, hardfault playbook",
+  "type": "module",
+  "main": "lib/index.js",
+  "files": [
+    "lib",
+    "src",
+    "skills",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "category": "skill",
+    "displayName": "Embedded Agent Kit",
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hutao-fmtech/embedded-agent-kit.git",
+    "directory": "bundles/kit-bundle"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "embedded",
+    "firmware",
+    "agentskills",
+    "cortex-m",
+    "stm32"
+  ]
+}

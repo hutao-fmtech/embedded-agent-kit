@@ -1,0 +1,4 @@
+# Minimal patch placeholder. Extend when you add a cordis plugin that injects
+# org-specific catalog entries or gates. Skills are primarily loaded via
+# skill-filesystem from this package's skills/ directory once the bundle is mounted.
+[]

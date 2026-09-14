@@ -1,0 +1,27 @@
+{
+  "name": "embedded-agent-kit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open-source Embedded Agent Kit for DeepSeek Harness (dsh)",
+  "license": "MIT",
+  "workspaces": [
+    "bundles/kit-bundle"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hutao-fmtech/embedded-agent-kit.git"
+  },
+  "scripts": {
+    "skills:link": "mkdir -p .dsh/skills && cp -R bundles/kit-bundle/skills/* .dsh/skills/",
+    "eval:l1": "bash eval/runner.sh l1-compile-fix"
+  },
+  "keywords": [
+    "embedded",
+    "firmware",
+    "dsh",
+    "deepseek-harness",
+    "agentskills",
+    "stm32",
+    "cortex-m"
+  ]
+}

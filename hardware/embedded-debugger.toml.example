@@ -1,0 +1,10 @@
+# Copy to embedded-debugger.toml and tighten for your lab.
+# Generate a fuller template via: embedded-debugger-mcp config generate
+
+[security]
+allow_flash_erase = false
+allow_memory_write = false
+# allowed_file_paths = ["/absolute/path/to/build"]
+
+[flash]
+allow_erase = false

@@ -1,0 +1,7 @@
+.dsh/
+hardware/embedded-debugger.toml
+vendor/embedded-debugger-mcp/
+vendor/embedded-workbench/
+**/target/
+node_modules/
+.DS_Store

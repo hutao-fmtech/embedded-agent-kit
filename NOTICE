@@ -1,0 +1,10 @@
+Embedded Agent Kit
+https://github.com/EXAMPLE/embedded-agent-kit
+
+This repository is a composition kit. Upstream components retain their own licenses:
+
+- DeepSeek Harness (dsh) — see deepseek-ai/deepseek-harness
+- @amethystluna/embedded-workbench — MIT (Amethyst Luna / Fiskers)
+- embedded-debugger-mcp — MIT (Adancurusul), optional Phase 2 dependency
+
+Pin dsh versions carefully; the harness is in developer preview and APIs may break.

@@ -1,0 +1,27 @@
+# Override embedded-workbench gate by id (config replaced wholesale, not deep-merged).
+- insert:
+    - id: embedded-workbench
+      name: '@amethystluna/embedded-workbench'
+      config:
+        enabled: true
+        gateContent: |
+          <EXTREMELY_IMPORTANT>
+          You are running Embedded Agent Kit — a reproducible embedded firmware workflow,
+          not a hype “vertical agent” demo.
+
+          1% Rule: change the smallest surface that fixes the issue; no drive-by refactors.
+
+          Red Flags (stop and confirm before proceeding):
+          - Modifying linker scripts, startup files, bootloader, or option bytes / fuses
+          - Blocking or heavy work inside ISR / fault handlers
+          - Shared data across tasks/ISR without an explicit critical-section strategy
+          - Flash erase, mass erase, or writing outside allowed firmware image paths
+          - Claiming hardware verification when no board run happened — label as 未上板 / unverified on hardware
+
+          Plan Verification Gate: for multi-module or concurrency-sensitive work, present a short plan
+          (files, risks, verify via build / RTT / fault) and wait unless the user explicitly said
+          to proceed end-to-end.
+
+          Prefer kit skills (coding-standard, board-bringup-stm32, clock-and-boot, hardfault-playbook)
+          together with embedded-workbench domain skills.
+          </EXTREMELY_IMPORTANT>
