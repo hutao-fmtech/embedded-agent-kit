@@ -1,7 +1,7 @@
 # Embedded Agent Kit — Architecture & Implementation Notes
 
-版本：v0.1 · 日期：2026-09-13 · 状态：可开工草案  
-底座：DeepSeek Harness (`dsh`, Developer Preview)  
+版本：v0.2 · 日期：2026-09-30 · 状态：可复现安装 + CI/CD/CT 边界（硬件闭环仍属后续）  
+底座：DeepSeek Harness (`dsh`, Developer Preview) — **权威 pin 见 `docs/dsh-pin.md`（禁止 floating latest）**  
 垂直域：嵌入式固件 / 驱动 / RTOS（以 Cortex-M 为第一阶段）
 
 ---
@@ -67,7 +67,7 @@ workbench         embedded           (probe-rs | OpenOCD)
 | 组件 | 选择 | 备注 |
 |---|---|---|
 | Harness | `@deepseek-ai/dsh` **钉死某个 rc 版本** | preview 会破，禁止 floating latest |
-| 领域 Skills 基座 | `@amethystluna/embedded-workbench` ≥ 0.7.1 | 官方 dsh.bundle；安装名必须带 scope |
+| 领域 Skills 基座 | `dsh-embedded-workbench` GitHub tag **v0.9.1** | 官方 dsh.bundle；依赖键用包名 `dsh-embedded-workbench`（非 floating main） |
 | Plan 纪律增强 | 上游提到的 `logicprobe`（同作者，可选） | 无则 Gate 退化为人工确认 |
 | 调试闭环 | `embedded-debugger-mcp` | probe-rs 默认；ESP/Xtensa 走 OpenOCD 后端 |
 | 工具链（阶段 1） | `arm-none-eabi-gcc` 或厂商 CLI + CMake/Ninja | 优先 CLI，Keil 作二期 |
@@ -142,13 +142,13 @@ embedded-agent/
 {
   "name": "embedded-firmware",
   "dependencies": {
-    "@amethystluna/embedded-workbench": "0.7.1",
+    "dsh-embedded-workbench": "github:AmethystLuna/embedded-workbench#v0.9.1",
     "@your-org/org-embedded": "0.1.0"
   },
   "dsh": {
     "profile": {
       "bundles": [
-        "@amethystluna/embedded-workbench",
+        "dsh-embedded-workbench",
         "@your-org/org-embedded"
       ]
     }
@@ -159,9 +159,10 @@ embedded-agent/
 安装社区包（文档原文）：
 
 ```bash
-npx -p @deepseek-ai/dsh dsh plugin --profile web add \
+npx -y -p @deepseek-ai/dsh@0.2.0-rc.2 dsh plugin --profile web add \
   "github:AmethystLuna/embedded-workbench"
-# 依赖键与 bundles 条目都必须是 @amethystluna/embedded-workbench
+# Prefer: bash scripts/install.sh  (see docs/dsh-pin.md)
+# 依赖键与 bundles 条目都必须是 dsh-embedded-workbench
 ```
 
 项目级 skills 快速试跑（不注入 gate）：
@@ -286,7 +287,7 @@ Session 轨迹（dsh Trajectory）保留：便于审计「谁让 Agent 擦了片
 
 ### Phase 0 — 环境钉扎（3–5 天）
 
-- [ ] 锁定 dsh 版本；记录安装命令与已知破改
+- [x] 锁定 dsh 版本；记录安装命令与已知破改（`docs/dsh-pin.md`）
 - [ ] 装 workbench（Option D 优先）；验证 gate 注入
 - [ ] 工具链 `env.sh`；无板编译通一个最小工程
 - [ ] 写 `docs/architecture.md` 内部对齐
@@ -367,7 +368,7 @@ CoS / 你：定成功标准、卡 Phase 出口、防止范围膨胀到「支持�
 ## 12. 第一周执行清单（可直接派活）
 
 1. Pin `dsh` rc 版本，装 web profile。  
-2. `dsh plugin add github:AmethystLuna/embedded-workbench`，确认 `@amethystluna/...` 命名。  
+2. `dsh plugin add "github:AmethystLuna/embedded-workbench#v0.9.1"`，确认 `dsh-embedded-workbench` 命名。  
 3. 覆盖 `gateContent` 为团队红线。  
 4. 拉 `embedded-debugger-mcp`，`doctor` + `probes list`。  
 5. 选定唯一 MVP 板型，写 `hardware/boards/.../README.md`。  

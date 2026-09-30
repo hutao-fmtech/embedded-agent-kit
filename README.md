@@ -24,35 +24,51 @@ Embedded Agent Kit optimizes for:
 ## Architecture
 
 ```text
-dsh (pinned)
- ├─ @amethystluna/embedded-workbench   # domain skills + first-step gate hook
+dsh (pinned — see docs/dsh-pin.md)
+ ├─ dsh-embedded-workbench (@v0.9.1)   # domain skills + first-step gate hook
  ├─ @embedded-agent-kit/bundle         # this repo’s skills + org red lines
  └─ optional: embedded-debugger-mcp    # probe-rs / OpenOCD loop
 ```
 
-Design notes: [docs/architecture.md](docs/architecture.md) · threat model: [docs/threat-model.md](docs/threat-model.md) · roadmap: [ROADMAP.md](ROADMAP.md)
+Design notes: [docs/architecture.md](docs/architecture.md) · threat model: [docs/threat-model.md](docs/threat-model.md) · roadmap: [ROADMAP.md](ROADMAP.md) · **dsh pin**: [docs/dsh-pin.md](docs/dsh-pin.md)
 
 ## Quick start
 
+Requires **Node.js ≥ 22.19** (see pin doc). Do **not** install a floating `dsh@latest`.
+
 ```bash
-git clone <this-repo> && cd embedded-agent-kit
+git clone https://github.com/hutao-fmtech/embedded-agent-kit.git
+cd embedded-agent-kit
+
+# One-shot: check pinned dsh + add workbench + link kit skills
+bash scripts/install.sh
+
 source toolchains/env.sh
 
-# Community workbench (scoped name required; enables Session Gate injection)
-npx -p @deepseek-ai/dsh dsh plugin --profile web add \
-  "github:AmethystLuna/embedded-workbench"
-
-# Kit skills (project-scoped, highest priority discovery)
-mkdir -p .dsh/skills
-cp -R bundles/kit-bundle/skills/* .dsh/skills/
-
-# Sanity
+# Sanity (needs arm-none-eabi-gcc on PATH)
 bash eval/runner.sh l1-compile-fix
+```
+
+Authoritative pin (version string, verify commands, known limits): **[docs/dsh-pin.md](docs/dsh-pin.md)**.  
+Current pin: `@deepseek-ai/dsh@0.2.0-rc.2`. Companion workbench: `dsh-embedded-workbench@0.9.1` via `github:AmethystLuna/embedded-workbench#v0.9.1`.
+
+Manual equivalent (if you skip the script):
+
+```bash
+# Exact pin only — never recommend unpinned @latest here
+npx -y -p @deepseek-ai/dsh@0.2.0-rc.2 dsh --version
+
+npx -y -p @deepseek-ai/dsh@0.2.0-rc.2 dsh plugin --profile web add \
+  "github:AmethystLuna/embedded-workbench#v0.9.1"
+
+npm run skills:link   # or: mkdir -p .dsh/skills && cp -R bundles/kit-bundle/skills/* .dsh/skills/
 ```
 
 Then open a `dsh` session and ask: *What embedded / kit skills do you have?*
 
-### Debugger (Phase 2)
+### Debugger (optional / later)
+
+Not part of the default install. Flash erase stays off — see [SECURITY.md](SECURITY.md).
 
 ```bash
 git clone https://github.com/Adancurusul/embedded-debugger-mcp.git vendor/embedded-debugger-mcp
@@ -67,16 +83,27 @@ git clone https://github.com/Adancurusul/embedded-debugger-mcp.git vendor/embedd
 
 | Path | Role |
 |------|------|
+| `docs/dsh-pin.md` | Authoritative `dsh` version pin |
+| `scripts/install.sh` | One-shot workbench + kit skills install |
 | `profiles/embedded-firmware/` | Profile deps + gate override draft |
 | `bundles/kit-bundle/skills/` | Kit skills (MIT) |
-| `hardware/boards/stm32-smoke/` | Reference board pack **placeholder** |
+| `hardware/boards/stm32-smoke/` | Reference board pack (**未上板** template) |
+| `hardware/boards/_template/` | Empty board pack template for contributors |
 | `toolchains/env.sh` | Toolchain probe |
-| `eval/` | Golden-task stubs |
-| `docs/` | Architecture & eval notes |
+| `eval/` | Golden-task stubs (L1 CT in CI when toolchain present) |
+| `.github/workflows/` | CI (static + optional dsh/L1) · CD (tag → Release) |
+| `docs/` | Architecture, eval notes, PRD |
 
 ## Status
 
-**Scaffold / v0.1.** Skills and scripts are real files; the STM32 smoke flash/RTT scripts intentionally exit non-zero until you wire a board. Treat hardware claims as unverified until Phase 0.3 in the roadmap is green.
+**v0.2.0 — reproducible install + lightweight CI/CD/CT.**  
+
+- Pin + `scripts/install.sh` + static CI + Release-on-tag + L1 CT (skip if no `arm-none-eabi-gcc`).  
+- Reference board-info is documented; **STM32 smoke flash/RTT scripts intentionally exit non-zero**.  
+- **Hardware loop is not verified.** Label any work without a probe as **未上板**.  
+- No invented pass-rate metrics.
+
+See [CHANGELOG.md](CHANGELOG.md) and [ROADMAP.md](ROADMAP.md).
 
 ## License
 

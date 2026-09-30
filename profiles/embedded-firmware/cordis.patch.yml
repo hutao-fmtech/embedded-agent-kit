@@ -1,7 +1,7 @@
 # Override embedded-workbench gate by id (config replaced wholesale, not deep-merged).
 - insert:
     - id: embedded-workbench
-      name: '@amethystluna/embedded-workbench'
+      name: 'dsh-embedded-workbench'
       config:
         enabled: true
         gateContent: |

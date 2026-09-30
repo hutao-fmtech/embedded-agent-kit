@@ -19,9 +19,11 @@ Thanks for helping make board-level agent workflows reproducible.
 ## Dev loop
 
 1. Fork and branch from `main`.
-2. Edit skills under `bundles/kit-bundle/skills/`.
-3. Run `bash eval/runner.sh l1-compile-fix` (toolchain may be required).
-4. Open a PR with: what changed, how you verified, whether hardware was involved.
+2. Prefer `bash scripts/install.sh` (Node ≥ 22.19); see `docs/dsh-pin.md`.
+3. Edit skills under `bundles/kit-bundle/skills/` (keep YAML `name` + `description`).
+4. Run `bash -n` on touched scripts; run `bash eval/runner.sh l1-compile-fix` if you have `arm-none-eabi-gcc`.
+5. Open a PR with: what changed, how you verified, whether hardware was involved (**未上板** if not).
+6. Board packs: start from `hardware/boards/_template/` or extend `stm32-smoke` docs honestly.
 
 ## Skill format
 

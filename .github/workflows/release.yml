@@ -1,0 +1,86 @@
+# Minimal CD: tag v* → GitHub Release body from CHANGELOG.md
+# Does not npm-publish or deploy to hardware.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release (e.g. v0.2.0). Leave empty to use github.ref_name when triggered by tag push."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag name
+        id: meta
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.tag }}" ]]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          # Strip leading v for CHANGELOG section match (v0.2.0 → 0.2.0)
+          VER="${TAG#v}"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Extract CHANGELOG section
+        id: notes
+        run: |
+          set -euo pipefail
+          VER="${{ steps.meta.outputs.version }}"
+          if [[ ! -f CHANGELOG.md ]]; then
+            echo "CHANGELOG.md missing" >&2
+            exit 1
+          fi
+          # Extract from ## [VER] or ## VER until next ## heading
+          python3 - <<'PY'
+          import pathlib, os, re, sys
+          ver = os.environ["VER"]
+          text = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          # Match ## 0.2.0 or ## [0.2.0] with optional date suffix
+          pat = re.compile(
+              rf"^##\s*\[?{re.escape(ver)}\]?[^\n]*\n(.*?)(?=^##\s|\Z)",
+              re.M | re.S,
+          )
+          m = pat.search(text)
+          if not m:
+              body = (
+                  f"Release {os.environ['TAG']}\n\n"
+                  f"(No matching ## {ver} section found in CHANGELOG.md; "
+                  f"using this stub. Maintainers should add a section.)\n"
+              )
+          else:
+              body = m.group(1).strip() + "\n"
+          pathlib.Path("release-notes.md").write_text(body, encoding="utf-8")
+          print("Wrote release-notes.md (%d bytes)" % len(body))
+          PY
+        env:
+          VER: ${{ steps.meta.outputs.version }}
+          TAG: ${{ steps.meta.outputs.tag }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: Embedded Agent Kit ${{ steps.meta.outputs.tag }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: ${{ contains(steps.meta.outputs.tag, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
