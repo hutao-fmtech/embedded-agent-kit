@@ -1,0 +1,178 @@
+# Embedded Agent Kit CI (v0.2)
+# Hard: skill frontmatter + bash -n
+# Soft: dsh smoke (skip-ok) · L1 eval (toolchain skip-ok)
+# Never requires a debug probe or flash.sh / rtt-smoke.sh success.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Static (frontmatter + bash -n)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check skill YAML frontmatter (name + description)
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          skills=(bundles/kit-bundle/skills/*/SKILL.md)
+          if [[ ${#skills[@]} -eq 0 ]]; then
+            echo "ERROR: no SKILL.md files found under bundles/kit-bundle/skills/" >&2
+            exit 1
+          fi
+          fail=0
+          for f in "${skills[@]}"; do
+            echo "==> $f"
+            # Extract YAML frontmatter between first two --- lines
+            if ! awk '
+              BEGIN { in_fm=0; found_open=0 }
+              NR==1 && $0=="---" { in_fm=1; found_open=1; next }
+              in_fm && $0=="---" { exit 0 }
+              in_fm { print }
+              END { if (!found_open) exit 2 }
+            ' "$f" > /tmp/skill-fm.yml; then
+              echo "ERROR: missing YAML frontmatter in $f" >&2
+              fail=1
+              continue
+            fi
+            if [[ ! -s /tmp/skill-fm.yml ]]; then
+              echo "ERROR: empty frontmatter in $f" >&2
+              fail=1
+              continue
+            fi
+            # name: non-empty (scalar or block — require a name: line with value or following content)
+            if ! grep -E '^name:[[:space:]]*.+' /tmp/skill-fm.yml >/dev/null; then
+              # allow name: on its own only if folded elsewhere — still fail if no name key
+              if ! grep -E '^name:' /tmp/skill-fm.yml >/dev/null; then
+                echo "ERROR: frontmatter missing name: in $f" >&2
+                fail=1
+              else
+                # name: present but empty scalar
+                val="$(grep -E '^name:' /tmp/skill-fm.yml | head -1 | sed 's/^name:[[:space:]]*//')"
+                if [[ -z "$val" ]]; then
+                  echo "ERROR: empty name in $f" >&2
+                  fail=1
+                fi
+              fi
+            fi
+            if ! grep -E '^description:' /tmp/skill-fm.yml >/dev/null; then
+              echo "ERROR: frontmatter missing description: in $f" >&2
+              fail=1
+            else
+              # description may be folded (>-); ensure not a bare empty scalar on same line without block
+              desc_line="$(grep -E '^description:' /tmp/skill-fm.yml | head -1)"
+              rest="${desc_line#description:}"
+              rest_trimmed="$(echo "$rest" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+              if [[ -z "$rest_trimmed" ]]; then
+                echo "ERROR: empty description in $f" >&2
+                fail=1
+              elif [[ "$rest_trimmed" == ">" || "$rest_trimmed" == ">|" || "$rest_trimmed" == "|" || "$rest_trimmed" == ">-" || "$rest_trimmed" == "|-" ]]; then
+                # block scalar — require at least one indented body line in frontmatter
+                if ! awk 'BEGIN{p=0} /^description:/{p=1; next} p && /^[^[:space:]#]/{exit 1} p && /^[[:space:]]+[^[:space:]]/{found=1} END{exit !found}' /tmp/skill-fm.yml; then
+                  echo "ERROR: empty block description in $f" >&2
+                  fail=1
+                fi
+              fi
+            fi
+          done
+          if [[ "$fail" -ne 0 ]]; then
+            echo "Frontmatter check failed." >&2
+            exit 1
+          fi
+          echo "OK: ${#skills[@]} skill(s) have non-empty name + description"
+
+      - name: bash -n on kit scripts
+        run: |
+          set -euo pipefail
+          files=(
+            toolchains/env.sh
+            eval/runner.sh
+            scripts/install.sh
+          )
+          shopt -s nullglob
+          files+=(eval/tasks/*/check.sh)
+          files+=(hardware/boards/*/scripts/*.sh)
+          files+=(scripts/*.sh)
+          # Deduplicate
+          mapfile -t files < <(printf '%s\n' "${files[@]}" | sort -u)
+          for f in "${files[@]}"; do
+            [[ -f "$f" ]] || continue
+            echo "bash -n $f"
+            bash -n "$f"
+          done
+          echo "OK: bash -n passed"
+
+  dsh-smoke:
+    name: dsh smoke (skip-ok)
+    runs-on: ubuntu-latest
+    # Soft gate: job reports skip/failure without blocking merge if dsh cannot run.
+    # Static job remains the hard merge gate. continue-on-error keeps PR green when
+    # registry/network/Node issues prevent smoke; when smoke runs it must match pin.
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.19"
+
+      - name: Read pin + run dsh --version / --dump-config
+        id: smoke
+        run: |
+          set -euo pipefail
+          PIN="$(grep -E '^\| \*\*Pinned version\*\*' docs/dsh-pin.md | head -1 | sed -E 's/.*`([^`]+)`.*/\1/')"
+          if [[ -z "$PIN" ]]; then
+            echo "skip_reason=could not parse pin from docs/dsh-pin.md" >> "$GITHUB_OUTPUT"
+            echo "::warning::dsh smoke skipped — could not parse pin"
+            exit 0
+          fi
+          echo "Using pin: $PIN"
+          if ! npx -y -p "@deepseek-ai/dsh@${PIN}" dsh --version; then
+            echo "skip_reason=npx/dsh --version failed (network or install)" >> "$GITHUB_OUTPUT"
+            echo "::warning::dsh smoke skipped — install/version failed"
+            exit 0
+          fi
+          VER="$(npx -y -p "@deepseek-ai/dsh@${PIN}" dsh --version | tail -n1 | tr -d '[:space:]')"
+          if [[ "$VER" != "$PIN" ]]; then
+            echo "ERROR: version mismatch got=$VER expected=$PIN" >&2
+            exit 1
+          fi
+          npx -y -p "@deepseek-ai/dsh@${PIN}" dsh --profile web --dump-config >/tmp/dsh-dump.yml
+          echo "dsh smoke OK (version + dump-config). Not a hardware test."
+          echo "skip_reason=" >> "$GITHUB_OUTPUT"
+
+  eval-l1:
+    name: L1 eval CT (toolchain skip-ok)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node (npm scripts)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run L1 or skip if no arm-none-eabi-gcc
+        run: |
+          set -euo pipefail
+          if ! command -v arm-none-eabi-gcc >/dev/null 2>&1; then
+            echo "L1 CT SKIP: arm-none-eabi-gcc not found on runner PATH."
+            echo "This is not a hardware pass. Install a GNU Arm Embedded Toolchain to enforce L1 on this job."
+            echo "Scaffold honesty: skip ≠ 未上板 verification; flash/RTT are out of scope for CI."
+            exit 0
+          fi
+          echo "arm-none-eabi-gcc found: $(command -v arm-none-eabi-gcc)"
+          npm run eval:l1

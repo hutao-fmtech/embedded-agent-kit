@@ -3,13 +3,13 @@
   "private": true,
   "description": "dsh profile composition for Embedded Agent Kit",
   "dependencies": {
-    "@amethystluna/embedded-workbench": "0.7.1",
+    "dsh-embedded-workbench": "github:AmethystLuna/embedded-workbench#v0.9.1",
     "@embedded-agent-kit/bundle": "file:../../bundles/kit-bundle"
   },
   "dsh": {
     "profile": {
       "bundles": [
-        "@amethystluna/embedded-workbench",
+        "dsh-embedded-workbench",
         "@embedded-agent-kit/bundle"
       ]
     }

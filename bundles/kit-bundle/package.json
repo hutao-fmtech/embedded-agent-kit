@@ -1,7 +1,7 @@
 {
   "name": "@embedded-agent-kit/bundle",
-  "version": "0.1.0",
-  "description": "Embedded Agent Kit org/kit skills bundle for DeepSeek Harness (dsh) — standards, STM32 bring-up, clock/boot red lines, hardfault playbook",
+  "version": "0.2.0",
+  "description": "Embedded Agent Kit org/kit skills bundle for DeepSeek Harness (dsh) \u2014 standards, STM32 bring-up, clock/boot red lines, hardfault playbook",
   "type": "module",
   "main": "lib/index.js",
   "files": [

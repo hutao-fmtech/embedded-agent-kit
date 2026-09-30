@@ -1,16 +1,46 @@
-# stm32-smoke（占位板）
+# stm32-smoke — reference board pack (template / **未上板**)
 
-填写真实硬件后删除「占位」字样。
+> **Honesty:** This pack is the kit’s single Cortex-M **reference id** for documentation
+> and contribution shape. Scripts are wired for a future real board; they are **not**
+> a verified hardware bring-up. Until a maintainer replaces TODOs with a measured board
+> and greens flash/RTT on hardware (roadmap v0.3), treat all claims as **未上板**.
 
-| 项 | 值 |
-|----|-----|
-| MCU | TODO |
-| Probe | TODO (ST-Link / J-Link / DAPLink) |
-| RTT | 期望输出包含 `SMOKE_OK` |
-| 工程路径 | TODO → 指向固件仓或本目录 `firmware/` |
+## Board-info (authoritative fields)
 
-## 脚本
+| Field | Value | Notes |
+|-------|-------|-------|
+| Board id | `stm32-smoke` | Directory name under `hardware/boards/` |
+| Board / product name | *fill when known* (placeholder) | e.g. Nucleo-F401RE — leave placeholder until real |
+| MCU | *TODO — e.g. STM32F401RE* | Cortex-M family expected for MVP |
+| Probe | *TODO — ST-Link / J-Link / DAPLink* | Prefer probe-rs compatible |
+| Debug port | SWD (expected) | Confirm on schematic |
+| Console | RTT (preferred) / UART *TODO* | |
+| Expected smoke string | `SMOKE_OK` | `rtt-smoke.sh` must eventually grep this |
+| Firmware project path | *TODO* → firmware repo or `firmware/` under this pack | Not wired in v0.2 |
+| Status | **未上板** / placeholder scripts | Do not market as hardware-verified |
 
-- `scripts/build.sh` — 编译（当前为可运行的占位，检出工具链）
-- `scripts/flash.sh` — 烧录（需 debugger MCP 或 probe-rs CLI）
-- `scripts/rtt-smoke.sh` — 读 RTT 并检查 `SMOKE_OK`
+Copy this table into PRs that claim a real reference board; delete “placeholder”
+wording only after on-hardware smoke is green.
+
+## Scripts (semantics)
+
+| Script | Behavior in v0.2 | Exit |
+|--------|------------------|------|
+| `scripts/build.sh` | Sources `toolchains/env.sh`; probes for `arm-none-eabi-gcc`. **No firmware tree build yet.** | `0` if toolchain present; `1` if missing |
+| `scripts/flash.sh` | Placeholder. Does not program flash. Refuse mass-erase unless user confirms (future). | **`1` (intentional)** |
+| `scripts/rtt-smoke.sh` | Placeholder. Does not attach RTT. | **`1` (intentional)** |
+
+CI and CT **must not** treat flash/RTT exit `0` as a gate in v0.2.
+
+## How to fill this pack (contributors)
+
+1. Replace MCU / Probe / console / firmware path with facts from your schematic.
+2. Point `build.sh` at your CMake/Make project; keep `SMOKE_OK` (or document a change).
+3. Wire `flash.sh` / `rtt-smoke.sh` via probe-rs CLI or optional `embedded-debugger-mcp`
+   (not a default install — see SECURITY.md).
+4. Mark README status **未上板** until flash + RTT smoke pass on desk hardware.
+5. For a new board id, start from `hardware/boards/_template/` instead of forking names silently.
+
+## Cross-reference
+
+Skill `board-bringup-stm32` should follow **this README** as the board-info source of truth.
